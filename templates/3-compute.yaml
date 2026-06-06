@@ -51,35 +51,42 @@ Resources:
       MinSize: 1
       PoolState: Stopped
 
-  # ==========================================
-  # ESCALABILIDAD (Solo una vez, basado en minutos)
-  # IMPORTANTE: Cambia estas horas (en UTC) antes de desplegar
-  # ==========================================
+  # =========================================================================
+  # ESCALABILIDAD PROGRAMADA (Ejecución única basada en minutos en tiempo real)
+  # =========================================================================
+  
+  # Accion 1: Escalar a 4 instancias
+  # Se ejecutara a las 11:00 PM hora Colombia (04:00 AM UTC)
   ScaleOutAction1:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref AutoScalingGroup
       DesiredCapacity: 4
-      # Ejemplo: Ejecutar a las 15:30 UTC de un dia especifico
-      StartTime: "2026-06-05T22:30:00Z" 
+      StartTime: "2026-06-06T04:00:00Z" 
 
+  # Accion 2: Escalar a 5 instancias
+  # Se ejecutara a las 11:10 PM hora Colombia (04:10 AM UTC)
   ScaleOutAction2:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref AutoScalingGroup
       DesiredCapacity: 5
-      StartTime: "2026-06-05T22:35:00Z"
+      StartTime: "2026-06-06T04:10:00Z"
 
+  # Accion 3: Reducir a 3 instancias
+  # Se ejecutara a las 11:20 PM hora Colombia (04:20 AM UTC)
   ScaleInAction1:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref AutoScalingGroup
       DesiredCapacity: 3
-      StartTime: "2026-06-05T22:40:00Z"
+      StartTime: "2026-06-06T04:20:00Z"
 
+  # Accion 4: Reducir a la capacidad base de 2 instancias
+  # Se ejecutara a las 11:30 PM hora Colombia (04:30 AM UTC)
   ScaleInAction2:
     Type: AWS::AutoScaling::ScheduledAction
     Properties:
       AutoScalingGroupName: !Ref AutoScalingGroup
       DesiredCapacity: 2
-      StartTime: "2026-06-05T22:45:00Z"
+      StartTime: "2026-06-06T04:30:00Z"
