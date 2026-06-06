@@ -1,0 +1,48 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Capa de Balanceo - Parcial 1029215-maicol
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+
+Resources:
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    Properties:
+      Name: tg-parcial-1029215-maicol
+      Port: 80
+      Protocol: HTTP
+      VpcId: !Ref VpcId
+      HealthCheckIntervalSeconds: 30
+      HealthCheckPath: /
+      TargetType: instance
+
+  ALB:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: alb-parcial-1029215-maicol
+      Subnets: !Ref Subnets
+      SecurityGroups:
+        - !ImportValue ALBSG-1029215-maicol
+      Type: application
+
+  ALBListener:
+    Type: AWS::ElasticLoadBalancingV2::Listener
+    Properties:
+      DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+      LoadBalancerArn: !Ref ALB
+      Port: 80
+      Protocol: HTTP
+
+Outputs:
+  TargetGroupARN:
+    Value: !Ref TargetGroup
+    Export:
+      Name: TG-1029215-maicol
+  ALBDNSName:
+    Description: DNS Publico del Balanceador
+    Value: !GetAtt ALB.DNSName

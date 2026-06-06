@@ -1,0 +1,51 @@
+name: Deploy Segmentado
+
+on:
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: us-east-1
+
+      - name: Obtener VPC y Subnets por defecto
+        id: vpc-info
+        run: |
+          # Extrae la VPC por defecto
+          VPC_ID=$(aws ec2 describe-vpcs --filters Name=isDefault,Values=true --query 'Vpcs[0].VpcId' --output text)
+          # Extrae 2 subredes de esa VPC separadas por coma
+          SUBNETS=$(aws ec2 describe-subnets --filters Name=vpc-id,Values=$VPC_ID --query 'Subnets[0:2].SubnetId' --output text | tr '\t' ',')
+          
+          echo "VPC_ID=$VPC_ID" >> $GITHUB_ENV
+          echo "SUBNETS=$SUBNETS" >> $GITHUB_ENV
+          echo "Desplegando en VPC: $VPC_ID con Subnets: $SUBNETS"
+
+      - name: 1. Desplegar Capa de Seguridad
+        run: |
+          aws cloudformation deploy \
+          --template-file templates/1-security.yaml \
+          --stack-name sec-parcial-1029215-maicol \
+          --parameter-overrides VpcId=${{ env.VPC_ID }}
+
+      - name: 2. Desplegar Capa de Balanceo
+        run: |
+          aws cloudformation deploy \
+          --template-file templates/2-loadbalancer.yaml \
+          --stack-name alb-parcial-1029215-maicol \
+          --parameter-overrides VpcId=${{ env.VPC_ID }} Subnets=${{ env.SUBNETS }}
+
+      - name: 3. Desplegar Capa de Computo
+        run: |
+          aws cloudformation deploy \
+          --template-file templates/3-compute.yaml \
+          --stack-name comp-parcial-1029215-maicol \
+          --parameter-overrides Subnets=${{ env.SUBNETS }}

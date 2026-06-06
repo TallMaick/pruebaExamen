@@ -1,0 +1,46 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Capa de Seguridad - Parcial 1029215-maicol
+
+Parameters:
+  VpcId:
+    Type: AWS::EC2::VPC::Id
+    Description: ID de la VPC por defecto
+
+Resources:
+  ALBSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SG para el ALB (HTTP publico)
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: sg-alb-parcial-1029215-maicol
+
+  EC2SecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: SG para EC2 (Solo permite trafico desde el ALB)
+      VpcId: !Ref VpcId
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          SourceSecurityGroupId: !Ref ALBSecurityGroup
+      Tags:
+        - Key: Name
+          Value: sg-ec2-parcial-1029215-maicol
+
+Outputs:
+  ALBSGExport:
+    Value: !Ref ALBSecurityGroup
+    Export:
+      Name: ALBSG-1029215-maicol
+  EC2SGExport:
+    Value: !Ref EC2SecurityGroup
+    Export:
+      Name: EC2SG-1029215-maicol

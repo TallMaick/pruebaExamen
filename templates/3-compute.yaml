@@ -1,0 +1,85 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Capa de Computo y Auto Scaling - Parcial 1029215-maicol
+
+Parameters:
+  Subnets:
+    Type: List<AWS::EC2::Subnet::Id>
+
+Resources:
+  EC2LaunchTemplate:
+    Type: AWS::EC2::LaunchTemplate
+    Properties:
+      LaunchTemplateName: lt-parcial-1029215-maicol
+      LaunchTemplateData:
+        ImageId: ami-0cca150d127c2216f # Amazon Linux en us-east-1
+        InstanceType: t2.micro # 100% Capa Gratuita
+        SecurityGroupIds:
+          - !ImportValue EC2SG-1029215-maicol
+        UserData:
+          Fn::Base64: !Sub |
+            #!/bin/bash
+            yum update -y
+            yum install -y httpd
+            systemctl start httpd
+            systemctl enable httpd
+            echo "<h1>Resolucion Parcial - $(hostname -f)</h1>" > /var/www/html/index.html
+
+  AutoScalingGroup:
+    Type: AWS::AutoScaling::AutoScalingGroup
+    Properties:
+      AutoScalingGroupName: asg-parcial-1029215-maicol
+      VPCZoneIdentifier: !Ref Subnets
+      LaunchTemplate:
+        LaunchTemplateId: !Ref EC2LaunchTemplate
+        Version: !GetAtt EC2LaunchTemplate.LatestVersionNumber
+      MinSize: '2'
+      MaxSize: '6'
+      DesiredCapacity: '2'
+      TargetGroupARNs:
+        - !ImportValue TG-1029215-maicol
+      HealthCheckType: ELB
+      HealthCheckGracePeriod: 300
+      Tags:
+        - Key: Name
+          Value: ec2-asg-1029215-maicol
+          PropagateAtLaunch: true
+
+  ASGWarmPool:
+    Type: AWS::AutoScaling::WarmPool
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      MinSize: 1
+      PoolState: Stopped
+
+  # ==========================================
+  # ESCALABILIDAD (Solo una vez, basado en minutos)
+  # IMPORTANTE: Cambia estas horas (en UTC) antes de desplegar
+  # ==========================================
+  ScaleOutAction1:
+    Type: AWS::AutoScaling::ScheduledAction
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      DesiredCapacity: 4
+      # Ejemplo: Ejecutar a las 15:30 UTC de un dia especifico
+      StartTime: "2026-06-05T22:30:00Z" 
+
+  ScaleOutAction2:
+    Type: AWS::AutoScaling::ScheduledAction
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      DesiredCapacity: 5
+      StartTime: "2026-06-05T22:35:00Z"
+
+  ScaleInAction1:
+    Type: AWS::AutoScaling::ScheduledAction
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      DesiredCapacity: 3
+      StartTime: "2026-06-05T22:40:00Z"
+
+  ScaleInAction2:
+    Type: AWS::AutoScaling::ScheduledAction
+    Properties:
+      AutoScalingGroupName: !Ref AutoScalingGroup
+      DesiredCapacity: 2
+      StartTime: "2026-06-05T22:45:00Z"
